@@ -29,7 +29,7 @@ from subprocess import CREATE_NO_WINDOW
 def solicitar_credenciales():
     
     root = tk.Tk()
-    root.withdraw()  # Oculta la ventana principal
+    root.withdraw()  
 
     cuenta = simpledialog.askstring("Cuenta", "Ingrese su cuenta:")
     if not cuenta:
@@ -132,6 +132,7 @@ def  configuracion_navegador(cwd):
     options.add_argument("disable-infobars")    
     options.add_argument("--disable-sync")
     options.add_argument("--log-level=3")  
+    options.add_argument("--inprivate")
 
 
     
@@ -159,24 +160,29 @@ def autenticacion_itsm(driver,cuenta,contrasena):
             messagebox.showerror('No estas conectado a internet!\n Revise su conexion a internet⚠️')
             return False
     except NoSuchElementException:
-        wait = WebDriverWait(driver ,10)
+        pass
+    try:
+        wait = WebDriverWait(driver ,20)
         print('Entre')
         btn_auten = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="microsoft-auth-button"]')))
         btn_auten.click()
         print('Entre2')
-        selec_cuenta = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="otherTile"]/div/div[2]')))
-        selec_cuenta.click()
         input_cuenta= wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="i0116"]')))
         input_cuenta.send_keys(cuenta)
         btn_siguiente = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="idSIButton9"]')))
         btn_siguiente.click()
         input_contra = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="i0118"]')))
         input_contra.send_keys(contrasena)
-        #btn_siguiente = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="idSIButton9"]')))
-        #btn_siguiente.click()
+        time.sleep(10)
+        btn_iniciar = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="idSIButton9"]')))
+        btn_iniciar.click()
+        btn_no_iniciada = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="idBtn_Back"]')))
+        btn_no_iniciada.click()
         time.sleep(30)#Borrar⏺️
         return driver
-        
+    except TimeoutException as e:
+        print(f"Error: Timeout esperando un elemento. Detalles: {str(e)}")
+        return False
         
 def main ():   
     if not os.path.exists("Input/.env"):
