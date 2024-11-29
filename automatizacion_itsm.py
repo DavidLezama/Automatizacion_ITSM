@@ -192,9 +192,6 @@ def autenticacion_itsm(driver,cuenta,contrasena):
             print('No encontre la monda esa😠')
             pass
 
-        print('voy a dormir')
-        time.sleep(1000)
-        print('termine')
         return driver
     except TimeoutException as e:
         print(f"Error: Timeout esperando un elemento. Detalles: {str(e)}")
@@ -204,10 +201,16 @@ def navegacion_itsm(driver):
     url_proyecto = 'https://servicios-it-corfi.atlassian.net/jira/servicedesk/projects/MS/queues/custom/50'
     wait = WebDriverWait(driver,10)
     driver.get(url_proyecto)
-    filtro_span = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-jira-navigation"]/header/nav/div/div[3]/div/button/span[2]/span')))
-    
-    filtro_span.click
+    time.sleep(30)
+    url_filtros = 'https://servicios-it-corfi.atlassian.net/jira/filters'
+    driver.get(url_filtros)
+    input_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div/input')))
+    input_filtro.send_keys('Todos ABIERTOS NIVEL 2')
+    time.sleep(20)
+    click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[2]/div[2]/table/tbody/tr/td[2]/div/div/a')))
+    click_filtro.click()
     time.sleep(100)
+    print('termine')
     return driver
 
         
@@ -229,7 +232,7 @@ def main ():
     driver = instancia_webdriver_edge(options=options,url= url_jira)
     print(f'Driver: {driver}')
     driver = autenticacion_itsm(driver=driver,cuenta=cuenta,contrasena=contrasena)
-    #navegacion_itsm(driver=driver)
+    navegacion_itsm(driver=driver)
 
 
 main()
