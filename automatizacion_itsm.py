@@ -201,14 +201,26 @@ def navegacion_itsm(driver):
     url_proyecto = 'https://servicios-it-corfi.atlassian.net/jira/servicedesk/projects/MS/queues/custom/50'
     wait = WebDriverWait(driver,10)
     driver.get(url_proyecto)
-    time.sleep(30)
+    time.sleep(10)
     url_filtros = 'https://servicios-it-corfi.atlassian.net/jira/filters'
     driver.get(url_filtros)
     input_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div/input')))
     input_filtro.send_keys('Todos ABIERTOS NIVEL 2')
-    time.sleep(20)
+    time.sleep(10)
     click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[2]/div[2]/table/tbody/tr/td[2]/div/div/a')))
     click_filtro.click()
+    btn_excel = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="com.atlassian.jira.spreadsheets__open-in-excel"]/span')))
+    btn_excel.click()
+    print(f"URL de la nueva pestaña: {driver.current_url}")
+
+
+
+
+    time.sleep(10)
+    btn_excel_desktop = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/section/div[3]/button/span')))
+    btn_excel_desktop.click()
+   
+
     time.sleep(100)
     print('termine')
     return driver
