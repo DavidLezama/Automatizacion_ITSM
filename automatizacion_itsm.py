@@ -212,8 +212,13 @@ def navegacion_itsm(driver):
     btn_excel = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="com.atlassian.jira.spreadsheets__open-in-excel"]/span')))
     btn_excel.click()
     print(f"URL de la nueva pestaña: {driver.current_url}")
+    pestana_original = driver.current_window_handle
 
-
+    WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
+    new_tab = [tab for tab in driver.window_handles if tab != pestana_original][0]
+    driver.switch_to.window(new_tab)
+    
+    print(f"URL de la nueva pestaña: {driver.current_url}")
 
 
     time.sleep(10)
