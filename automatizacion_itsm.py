@@ -226,11 +226,18 @@ def navegacion_itsm(driver):
     btn_excel_desktop.click()
    
 
-    time.sleep(100)
+    time.sleep(10)
     print('termine')
     return driver
 
-        
+def renombrar_excel():
+    for x in os.listdir('Input'):
+        if 'jira-search' in x :
+            try:
+                os.rename(f'Input/{x}','Input/Filtro.xlsx')
+            except:
+                os.remove('Input/Filtro.xlsx')
+                os.rename(f'Input/{x}','Input/Filtro.xlsx')
 def main ():   
     if not os.path.exists("Input/.env"):
         cuenta, contrasena = solicitar_credenciales()
@@ -250,6 +257,7 @@ def main ():
     print(f'Driver: {driver}')
     driver = autenticacion_itsm(driver=driver,cuenta=cuenta,contrasena=contrasena)
     navegacion_itsm(driver=driver)
+    renombrar_excel()
 
 
 main()
