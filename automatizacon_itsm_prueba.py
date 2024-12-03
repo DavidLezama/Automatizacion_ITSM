@@ -30,21 +30,64 @@ from openpyxl import load_workbook
 from subprocess import CREATE_NO_WINDOW
 
 def solicitar_credenciales():
-    
+    def confirmar():
+        cuenta = cuenta_entry.get().strip()
+        contrasena = contrasena_entry.get().strip()
+        
+        if not cuenta:
+            messagebox.showerror("Error", "Debe ingresar una cuenta.")
+            return
+        if not contrasena:
+            messagebox.showerror("Error", "Debe ingresar una contraseña.")
+            return
+
+        root.quit()  # Salir del bucle principal
+        root.destroy()  # Cerrar la ventana
+        nonlocal result
+        result = (cuenta, contrasena)
+
+    # Configuración inicial
     root = tk.Tk()
-    root.withdraw()  
+    root.title("Iniciar Sesión")
+    root.configure(bg="#4B0082")  # Morado Axity
+    root.geometry("400x250")
+    root.resizable(False, False)
 
-    cuenta = simpledialog.askstring("Cuenta", "Ingrese su cuenta:")
-    if not cuenta:
-        messagebox.showerror("Error", "Debe ingresar una cuenta.")
-        return None, None
+    # Títulos y estilos
+    tk.Label(
+        root, text="Iniciar Sesión", font=("Arial", 18, "bold"), bg="#4B0082", fg="white"
+    ).pack(pady=10)
 
-    contrasena = simpledialog.askstring("Contraseña", "Ingrese su contraseña:", show="*")
-    if not contrasena:
-        messagebox.showerror("Error", "Debe ingresar una contraseña.")
-        return None, None
+    # Campo de entrada para la cuenta
+    tk.Label(root, text="Cuenta:", font=("Arial", 12), bg="#4B0082", fg="white").pack(
+        pady=5
+    )
+    cuenta_entry = tk.Entry(root, font=("Arial", 12), width=30)
+    cuenta_entry.pack(pady=5)
 
-    return cuenta, contrasena
+    # Campo de entrada para la contraseña
+    tk.Label(
+        root, text="Contraseña:", font=("Arial", 12), bg="#4B0082", fg="white"
+    ).pack(pady=5)
+    contrasena_entry = tk.Entry(root, font=("Arial", 12), width=30, show="*")
+    contrasena_entry.pack(pady=5)
+
+    # Botón para confirmar
+    confirmar_btn = tk.Button(
+        root,
+        text="Confirmar",
+        font=("Arial", 12),
+        bg="white",
+        fg="#4B0082",
+        command=confirmar,
+    )
+    confirmar_btn.pack(pady=20)
+
+    result = None
+    root.mainloop()  # Mostrar la ventana
+    return result
+
+
 
 
 def guardar_clave_en_credenciales(nombre, valor):
