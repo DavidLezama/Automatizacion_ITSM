@@ -281,46 +281,39 @@ def renombrar_excel():
     for x in os.listdir('Input'):
         if 'jira-search' in x :
             try:
-                os.rename(f'Input/{x}','Input/Filtro.xlsx')
+                os.rename(f'Input/{x}','Input/FiltroCNI.xlsx')
             except:
-                os.remove('Input/Filtro.xlsx')
-                os.rename(f'Input/{x}','Input/Filtro.xlsx')
+                os.remove('Input/FiltroCNI.xlsx')
+                os.rename(f'Input/{x}','Input/FiltroCNI.xlsx')
 
 # pip install openpyxl 
 def manipular_excel_y_cargar_sharepoint(driver):
     
-    wb = load_workbook('.\\Input\\Filtro.xlsx')
+    wb = load_workbook('.\\Input\\FiltroCNI.xlsx')
     sheet = wb.active
 
-    data=[]
-
-    for row in sheet.iter_rows(values_only=True):
-        data.append(row)
+    data = [row for row in sheet.iter_rows(values_only=True)]
 
     df = pd.DataFrame(data)
 
     df.columns = df.iloc[0]
     df = df[1:]
 
-    fechaActual=datetime.now()
-    fecha_filtro=fechaActual-timedelta(days=2)
-
-    df['Actualizada'] = pd.to_datetime(df['Actualizada'], format="%d/%m/%Y %I:%M:%S %p", errors='coerce')
-    filtrados = df[df['Actualizada'] < fecha_filtro]
+    filtrados = df[df['Actualizada'].isnull()]
 
     if not filtrados.empty:
-        print('Hay casos pendientes de mas de dos días')
+        print('Hay casos nuevos')
         carpeta_output = '.\\Output'
         if not os.path.exists(carpeta_output):
             os.makedirs(carpeta_output)
 
-        output_path = '.\\Output\\Datos_Filtrados.xlsx'
+        output_path = '.\\Output\\Datos_Filtrados_CNI.xlsx'
         filtrados.to_excel(output_path, index=False)
 
         print(f"\nLos datos filtrados se han guardado en: {output_path}")
 
             # Ruta del archivo y la carpeta sincronizada de OneDrive
-        archivo_local = '.\\Output\\Datos_Filtrados.xlsx'
+        archivo_local = '.\\Output\\Datos_Filtrados_CNI.xlsx'
         carpeta_onedrive = 'C:\\Users\\LCR404854\\OneDrive - Axity\\Documentos\\Proyectos\\CORFICOLOMBIANA\\Automatizaciones\\ITSM\\Corrección\\Proyecto\\Archivos'  # Ruta de la carpeta sincronizada de SharePoint en OneDrive
         
         try:
@@ -341,8 +334,9 @@ def manipular_excel_y_cargar_sharepoint(driver):
         time.sleep(10)
         driver.quit()
     else:
-        print('No hay casos pendientes de mas de dos días')
-    
+        print('No hay casos nuevos')
+
+
 
 def main ():   
 
