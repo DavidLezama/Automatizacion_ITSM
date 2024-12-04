@@ -18,6 +18,9 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException
 from requests.exceptions import ConnectionError
+import pandas as pd
+from datetime import datetime, timedelta
+from openpyxl import load_workbook
 
 #INSTALADORES
 #pip install msedge-selenium-tools
@@ -27,21 +30,64 @@ from requests.exceptions import ConnectionError
 from subprocess import CREATE_NO_WINDOW
 
 def solicitar_credenciales():
-    
+    def confirmar():
+        cuenta = cuenta_entry.get().strip()
+        contrasena = contrasena_entry.get().strip()
+        
+        if not cuenta:
+            messagebox.showerror("Error", "Debe ingresar una cuenta.")
+            return
+        if not contrasena:
+            messagebox.showerror("Error", "Debe ingresar una contraseña.")
+            return
+
+        root.quit()  # Salir del bucle principal
+        root.destroy()  # Cerrar la ventana
+        nonlocal result
+        result = (cuenta, contrasena)
+
+    # Configuración inicial
     root = tk.Tk()
-    root.withdraw()  
+    root.title("Iniciar Sesión")
+    root.configure(bg="#4B0082")  # Morado Axity
+    root.geometry("400x250")
+    root.resizable(False, False)
 
-    cuenta = simpledialog.askstring("Cuenta", "Ingrese su cuenta:")
-    if not cuenta:
-        messagebox.showerror("Error", "Debe ingresar una cuenta.")
-        return None, None
+    # Títulos y estilos
+    tk.Label(
+        root, text="Iniciar Sesión", font=("Arial", 18, "bold"), bg="#4B0082", fg="white"
+    ).pack(pady=10)
 
-    contrasena = simpledialog.askstring("Contraseña", "Ingrese su contraseña:", show="*")
-    if not contrasena:
-        messagebox.showerror("Error", "Debe ingresar una contraseña.")
-        return None, None
+    # Campo de entrada para la cuenta
+    tk.Label(root, text="Cuenta:", font=("Arial", 12), bg="#4B0082", fg="white").pack(
+        pady=5
+    )
+    cuenta_entry = tk.Entry(root, font=("Arial", 12), width=30)
+    cuenta_entry.pack(pady=5)
 
-    return cuenta, contrasena
+    # Campo de entrada para la contraseña
+    tk.Label(
+        root, text="Contraseña:", font=("Arial", 12), bg="#4B0082", fg="white"
+    ).pack(pady=5)
+    contrasena_entry = tk.Entry(root, font=("Arial", 12), width=30, show="*")
+    contrasena_entry.pack(pady=5)
+
+    # Botón para confirmar
+    confirmar_btn = tk.Button(
+        root,
+        text="Confirmar",
+        font=("Arial", 12),
+        bg="white",
+        fg="#4B0082",
+        command=confirmar,
+    )
+    confirmar_btn.pack(pady=20)
+
+    result = None
+    root.mainloop()  # Mostrar la ventana
+    return result
+
+
 
 
 def guardar_clave_en_credenciales(nombre, valor):
@@ -238,7 +284,70 @@ def renombrar_excel():
             except:
                 os.remove('Input/Filtro.xlsx')
                 os.rename(f'Input/{x}','Input/Filtro.xlsx')
+
+# pip install openpyxl 
+def manipular_excel():
+    
+    wb = load_workbook('.\\Input\\Filtro.xlsx')
+    sheet = wb.active
+
+    data=[]
+
+    for row in sheet.iter_rows(values_only=True):
+        data.append(row)
+
+    df = pd.DataFrame(data)
+
+    df.columns = df.iloc[0]
+    df = df[1:]
+
+    fechaActual=datetime.now()
+    fecha_filtro=fechaActual-timedelta(days=2)
+
+    df['Actualizada'] = pd.to_datetime(df['Actualizada'], format="%d/%m/%Y %I:%M:%S %p", errors='coerce')
+    filtrados = df[df['Actualizada'] < fecha_filtro]
+
+    carpeta_output = '.\\output'
+    if not os.path.exists(carpeta_output):
+        os.makedirs(carpeta_output)
+
+    output_path = '.\\output\\Datos_Filtrados.xlsx'
+    filtrados.to_excel(output_path, index=False)
+
+    print(f"\nLos datos filtrados se han guardado en: {output_path}")
+
+
+
+import shutil
+
+# Copiar el archivo filtrado generado en una carpeta sincronizada de sharepoint en el equipo de quien lo ejecuta
+def cargar_sharepoint(driver):
+
+    # Ruta del archivo y la carpeta sincronizada de OneDrive
+    archivo_local = '.\\output\\Datos_Filtrados.xlsx'
+    carpeta_onedrive = 'C:\\Users\\LCR404854\\OneDrive - Axity\\Documentos\\Proyectos\\CORFICOLOMBIANA\\Automatizaciones\\ITSM\\Corrección\\Proyecto\\Archivos'  # Ruta de la carpeta sincronizada de SharePoint en OneDrive
+    
+    try:
+        shutil.copy(archivo_local, carpeta_onedrive)
+        print(f"Archivo {archivo_local} copiado exitosamente a OneDrive.")
+    except Exception as e:
+        print(f"Error al copiar el archivo: {e}")
+
+    url_sharepoint = 'https://intellego365-my.sharepoint.com/:f:/g/personal/luis_rincong_axity_com/ErXjgNikoAVGsYBlUoSLmSQBo7dzFojvhCBTidq5W9BIzA?e=RnpB6Z'
+    
+    try:
+        driver.get(url_sharepoint)
+        print("Se ha cargado SharePoint correctamente.")
+        time.sleep(10)
+    except Exception as e:
+        print(f"Ocurrió un error al cargar SharePoint: {e}")
+    driver.refresh()
+    time.sleep(10)
+    driver.quit()
+    
+
 def main ():   
+
     if not os.path.exists("Input/.env"):
         cuenta, contrasena = solicitar_credenciales()
         if cuenta and contrasena:
@@ -258,6 +367,7 @@ def main ():
     driver = autenticacion_itsm(driver=driver,cuenta=cuenta,contrasena=contrasena)
     navegacion_itsm(driver=driver)
     renombrar_excel()
-
+    manipular_excel()
+    cargar_sharepoint(driver)
 
 main()
