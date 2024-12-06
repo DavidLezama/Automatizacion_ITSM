@@ -439,7 +439,6 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
-    cuenta='luis.RinconG@axity.com'
     contraseña_de_aplicacion=''#añadir contraseña de aplicación
     enviar_correo(cuenta,contraseña_de_aplicacion)
 
