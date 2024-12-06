@@ -22,6 +22,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 import shutil
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 #INSTALADORES
 #pip install msedge-selenium-tools
@@ -342,8 +345,78 @@ def manipular_excel_y_cargar_sharepoint(driver):
         driver.quit()
     else:
         print('No hay casos pendientes de mas de dos días')
-    
 
+
+def asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena):
+    SMTP_SERVER = "smtp.office365.com"
+    SMTP_PORT = 587
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = cuenta
+        msg['To'] = destinatario
+        msg['Subject'] = asunto
+
+        msg.attach(mensaje)
+
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(cuenta, contrasena)
+            server.sendmail(cuenta, destinatario, msg.as_string())
+        
+        print("Correo enviado con éxito.")
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+
+def enviar_correo(cuenta,contrasena):
+
+    p_asignada = pd.read_excel('.\\Output\\Datos_Filtrados.xlsx')
+    correo_asignado = pd.read_excel('.\\Persona asignada.xlsx')
+
+    for i, persona in enumerate(p_asignada['Persona asignada']):
+
+        coincidencia = correo_asignado[correo_asignado['Persona asignada'] == persona]
+        
+        if not coincidencia.empty and not coincidencia['correo'].isna().all():
+            destinatario = coincidencia['correo'].values[0]
+            clave = p_asignada.loc[i, 'Clave']
+            actualizada = p_asignada.loc[i, 'Actualizada']
+            categoria = p_asignada.loc[i, 'Categoría de estado']
+            resumen = p_asignada.loc[i, 'Resumen']
+            p_encargada=p_asignada.loc[i,'Persona asignada']
+            mensaje = MIMEText(f"""
+                            <html>
+                            <head>
+                                <style>
+                                body {{
+                                    font-family: Arial, sans-serif;
+                                    font-size: 14px;
+                                    color: #333333;
+                                }}
+                                p {{
+                                    margin: 10px 0;
+                                }}
+                                .resumen {{
+                                    color: #0056b3;
+                                    font-weight: bold;
+                                }}
+                                .fecha {{
+                                    color: #888888;
+                                }}
+                                </style>
+                            </head>
+                            <body>
+                                <p>Buen día <strong>{p_encargada},</strong></p>
+                                <p>El caso <span class="resumen">{clave}</span> "{resumen}" se encuentra en la categoría: 
+                                <em>"{categoria}"</em> y su última respuesta fue el <span class="fecha">{actualizada}</span>.</p>
+                                <p>Por favor, dar nueva respuesta.</p>
+                                <p>¡Gracias!</p>
+                            </body>
+                            </html>
+                        """, 'html')
+            asunto=f'Caso {clave} pendiente de respuesta'
+            asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena)
+            print('Correo enviado con exito')
+    
 def main ():   
 
     if not os.path.exists("Input/.env"):
@@ -366,5 +439,8 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
+    cuenta='luis.RinconG@axity.com'
+    contraseña_de_aplicacion=''#añadir contraseña de aplicación
+    enviar_correo(cuenta,contraseña_de_aplicacion)
 
 main()
