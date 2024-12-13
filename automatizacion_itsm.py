@@ -367,10 +367,12 @@ def asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena):
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
 
-def enviar_correo(cuenta,contrasena):
+def enviar_correo(cuenta,contrasena,correo_equipo_teams):
 
     p_asignada = pd.read_excel('.\\Output\\Datos_Filtrados.xlsx')
     correo_asignado = pd.read_excel('.\\Persona asignada.xlsx')
+
+    mensajes_acumulados = []
 
     for i, persona in enumerate(p_asignada['Persona asignada']):
 
@@ -383,7 +385,7 @@ def enviar_correo(cuenta,contrasena):
             categoria = p_asignada.loc[i, 'Categoría de estado']
             resumen = p_asignada.loc[i, 'Resumen']
             p_encargada=p_asignada.loc[i,'Persona asignada']
-            mensaje = MIMEText(f"""
+            mensaje_correo = MIMEText(f"""
                             <html>
                             <head>
                                 <style>
@@ -413,9 +415,40 @@ def enviar_correo(cuenta,contrasena):
                             </body>
                             </html>
                         """, 'html')
+
             asunto=f'Caso {clave} pendiente de respuesta'
-            asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena)
+            asignar_correo(destinatario, asunto, mensaje_correo,cuenta,contrasena)
             print('Correo enviado con exito')
+            # envio de mensaje a grupo de teams por medio de correo de teams
+            mensaje_individual=f"""
+            <p>---------------------------------------------------------------------------------------------------</p>
+            <p>✔ Buen día <strong>{p_encargada},</strong></p>
+            <p>El caso <strong>{clave}</strong> "{resumen}" se encuentra en la categoría: 
+            <em>"{categoria}"</em> y su última respuesta fue el <strong>{actualizada}</strong>.</p>
+            """
+
+            # Añadir el mensaje a la lista de mensajes 
+            mensajes_acumulados.append(mensaje_individual)
+
+              # Consolidar todos los mensajes en un solo correo para el equipo de Teams
+    if mensajes_acumulados:
+        mensajes_html = ''.join(mensajes_acumulados)
+        mensaje_equipo = MIMEText(f"""
+            <html>
+            <head></head>
+            <body>
+                {mensajes_html}
+                <p>---------------------------------------------------------------------------------------------------</p>
+                <p>Por favor, revisar estos casos.</p>
+                <p>¡Gracias!</p>
+            </body>
+            </html>
+        """, 'html')
+        asunto_equipo = "Resumen de casos pendientes"
+
+        asignar_correo(correo_equipo_teams, asunto_equipo, mensaje_equipo,cuenta,contrasena)
+    else:
+        print('No hay casos pendientes')
     
 def main ():   
 
@@ -440,6 +473,28 @@ def main ():
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
     contraseña_de_aplicacion=''#añadir contraseña de aplicación
-    enviar_correo(cuenta,contraseña_de_aplicacion)
+    correo_equipo_teams=''#Correo de equipo de teams
+    enviar_correo(cuenta,contraseña_de_aplicacion,correo_equipo_teams)#
+    # Para avisar a cada miembro del equipo que llego un mensjae al grupo de teams
+    '''
+    1- Crear un flujo Flujo de nube automatizado en power automate
+    2- Desencadenante "Cuando se publique un mensaje en un canal" de Microsoft Teams.
+    3- escoger el equipo
+    4- agrregar un conector de teams que avise a un chat donde esten todos que llego un nuevo mensaje al equipo
+    '''
+    #nota= Se debe agragar un espacio para que se meta la contraseña de aplicación y el correo del equipo de teams en las variablesw de entorno 
+
+    ''' -Siempre debe haber un archivo .xlsx llamado "Persona asignada" con el nombre de la persona asignada 
+        como aparece en el archivo que se descarga del ITSM y el correo correspondiente a cada persona:
+
+    ejemplo:
+
+    Persona asignada	                    correo
+    Frank Stiven Barragán Gutiérrez	
+    Erika Carolina Zamudio	
+    Luis Carlos Rincon Gordo	            Luis.RinconG@axity.com
+    Dennis Carolina Holguin	
+    Esteban De Jesus Mazo Serna	'''
+
 
 main()
