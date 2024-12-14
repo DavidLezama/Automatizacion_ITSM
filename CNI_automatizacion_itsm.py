@@ -22,6 +22,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 import shutil
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 #INSTALADORES
 #pip install msedge-selenium-tools
@@ -251,16 +254,16 @@ def navegacion_itsm(driver):
     time.sleep(10)
     url_filtros = 'https://servicios-it-corfi.atlassian.net/jira/filters'
     driver.get(url_filtros)
-    input_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div/input')))
+    input_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[1]/div[1]/div[2]/div[4]/div[1]/main/div/div/div[1]/div/div[1]/div[2]/div/div[1]/div/div/input')))
     input_filtro.send_keys('Todos ABIERTOS NIVEL 2')
     time.sleep(10)
-    click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[2]/div[2]/table/tbody/tr/td[2]/div/div/a')))
+    click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[1]/div[1]/div[2]/div[4]/div[1]/main/div/div/div[1]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/div/a')))
     click_filtro.click()
     btn_excel = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="com.atlassian.jira.spreadsheets__open-in-excel"]/span')))
     btn_excel.click()
     print(f"URL de la nueva pestaña: {driver.current_url}")
     pestana_original = driver.current_window_handle
-
+    print('descargando')
     WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
     new_tab = [tab for tab in driver.window_handles if tab != pestana_original][0]
     driver.switch_to.window(new_tab)
@@ -292,50 +295,150 @@ def manipular_excel_y_cargar_sharepoint(driver):
     wb = load_workbook('.\\Input\\FiltroCNI.xlsx')
     sheet = wb.active
 
-    data = [row for row in sheet.iter_rows(values_only=True)]
+    data=[]
+
+    for row in sheet.iter_rows(values_only=True):
+        data.append(row)
 
     df = pd.DataFrame(data)
 
     df.columns = df.iloc[0]
     df = df[1:]
 
-    filtrados = df[df['Actualizada'].isnull()]
+    # Filtrar las filas por "Categoría de estado"
+    filtrados = df[df['Categoría de estado'].isin(['Asignación & Análisis'])]
+
+            # Crear la carpeta de salida si no existe
+    carpeta_output = '.\\Output'
+    if not os.path.exists(carpeta_output):
+        os.makedirs(carpeta_output)
+
+    output_path = '.\\Output\\Datos_Filtrados_CNI.xlsx'
 
     if not filtrados.empty:
-        print('Hay casos nuevos')
-        carpeta_output = '.\\Output'
-        if not os.path.exists(carpeta_output):
-            os.makedirs(carpeta_output)
+        print('Se encontraron filas con "Asignación & Análisis" en la columna "Categoría de estado".')
 
-        output_path = '.\\Output\\Datos_Filtrados_CNI.xlsx'
+        # Guardar los datos filtrados en un nuevo archivo Excel
         filtrados.to_excel(output_path, index=False)
 
         print(f"\nLos datos filtrados se han guardado en: {output_path}")
 
-            # Ruta del archivo y la carpeta sincronizada de OneDrive
-        archivo_local = '.\\Output\\Datos_Filtrados_CNI.xlsx'
-        carpeta_onedrive = 'C:\\Users\\LCR404854\\OneDrive - Axity\\Documentos\\Proyectos\\CORFICOLOMBIANA\\Automatizaciones\\ITSM\\Corrección\\Proyecto\\Archivos'  # Ruta de la carpeta sincronizada de SharePoint en OneDrive
-        
-        try:
-            shutil.copy(archivo_local, carpeta_onedrive)
-            print(f"Archivo {archivo_local} copiado exitosamente a OneDrive.")
-        except Exception as e:
-            print(f"Error al copiar el archivo: {e}")
-
-        url_sharepoint = 'https://intellego365-my.sharepoint.com/:f:/g/personal/luis_rincong_axity_com/ErXjgNikoAVGsYBlUoSLmSQBo7dzFojvhCBTidq5W9BIzA?e=RnpB6Z'
-        
-        try:
-            driver.get(url_sharepoint)
-            print("Se ha cargado SharePoint correctamente.")
-            time.sleep(10)
-        except Exception as e:
-            print(f"Ocurrió un error al cargar SharePoint: {e}")
-        driver.refresh()
-        time.sleep(10)
-        driver.quit()
     else:
-        print('No hay casos nuevos')
+         # Crear un archivo Excel vacío si no se encuentran datos
+        df_vacio = pd.DataFrame(columns=df.columns)  # Crear un DataFrame vacío con las mismas columnas
+        df_vacio.to_excel(output_path, index=False)  # Guardar el archivo vacío
+        print('No se encontraron filas con "Asignación & Análisis" en la columna "Categoría de estado".')
 
+
+
+def asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena):
+    SMTP_SERVER = "smtp.office365.com"
+    SMTP_PORT = 587
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = cuenta
+        msg['To'] = destinatario
+        msg['Subject'] = asunto
+
+        msg.attach(mensaje)
+
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(cuenta, contrasena)
+            server.sendmail(cuenta, destinatario, msg.as_string())
+        
+        print("Correo enviado con éxito.")
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+
+def enviar_correo(cuenta,contrasena,correo_equipo_teams):
+
+    caso_nuevo = pd.read_excel('.\\Output\\Datos_Filtrados_CNI.xlsx')
+    correo_asignado = pd.read_excel('.\\Input\\Persona asignada CNI.xlsx')
+
+    mensajes_acumulados = []
+
+    for i, row in correo_asignado.iterrows():
+
+        destinatario = row.get('correo')
+        persona_asignada = row.get('Persona asignada')
+
+        if pd.notna(destinatario):
+
+            for j, caso_row in caso_nuevo.iterrows():
+                # Extraer los datos del caso
+                clave = caso_row['Clave']
+                creada = caso_row['Creada']
+                prioridad = caso_row['Prioridad']
+                resumen = caso_row['Resumen']
+                p_encargada = caso_row['Persona asignada']
+                categoría_estado = caso_row['Categoría de estado']
+
+                mensaje_correo = MIMEText(f"""
+                                <html>
+                                <head>
+                                    <style>
+                                    body {{
+                                        font-family: Arial, sans-serif;
+                                        font-size: 14px;
+                                        color: #333333;
+                                    }}
+                                    p {{
+                                        margin: 10px 0;
+                                    }}
+                                    .resumen {{
+                                        color: #0056b3;
+                                        font-weight: bold;
+                                    }}
+                                    .fecha {{
+                                        color: #888888;
+                                    }}
+                                    </style>
+                                </head>
+                                <body>
+                                    <p>Buen día <strong>{persona_asignada},</strong></p>
+                                    <p>Acaba de llegar un nuevo caso: <span class="resumen">{clave}</span> "{resumen}" y se encuentra en nivel de prioridad: 
+                                    <em>"{prioridad}"</em> con categoria de estado <em>{categoría_estado}</em>  y fue creado el; <span class="fecha">{creada}</span>.</p>
+                                    <p>Por favor, dar primera respuesta.</p>
+                                    <p>¡Gracias!</p>
+                                </body>
+                                </html>
+                            """, 'html')
+
+                asunto=f'Caso {clave} pendiente de respuesta'
+
+                asignar_correo(destinatario, asunto, mensaje_correo,cuenta,contrasena)
+                print(f'Correo enviado con exito a {destinatario}')
+                # envio de mensaje a grupo de teams por medio de correo de teams
+                mensaje_individual=f"""
+                <p>---------------------------------------------------------------------------------------------------</p>
+                <p>✔ Buen día <strong>{persona_asignada},</strong></p>
+                <p>Acaba de llegar un nuevo caso: <span class="resumen">{clave}</span> "{resumen}" y se encuentra en nivel de prioridad: 
+                <em>"{prioridad}"</em> con categoria de estado <strong>{categoría_estado}</strong>  y fue creado el; <strong><span class="fecha">{creada}</span></strong>.</p>
+                """
+
+                # Añadir el mensaje a la lista de mensajes 
+                mensajes_acumulados.append(mensaje_individual)
+
+                # Consolidar todos los mensajes en un solo correo para el equipo de Teams
+        if mensajes_acumulados:
+            mensajes_html = ''.join(mensajes_acumulados)
+            mensaje_equipo = MIMEText(f"""
+                <html>
+                <head></head>
+                <body>
+                    {mensajes_html}
+                    <p>---------------------------------------------------------------------------------------------------</p>
+                    <p>Por favor, revisar estos casos nuevos.</p>
+                    <p>¡Gracias!</p>
+                </body>
+                </html>
+            """, 'html')
+            asunto_equipo = "Resumen de casos nuevos"
+
+            asignar_correo(correo_equipo_teams, asunto_equipo, mensaje_equipo,cuenta,contrasena)
+        else:
+            print('No hay casos nuevos')
 
 
 def main ():   
@@ -360,5 +463,28 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
+    contraseña_de_aplicacion=''#añadir contraseña de aplicación
+    correo_equipo_teams=''#Correo de equipo de teams
+    enviar_correo(cuenta,contraseña_de_aplicacion,correo_equipo_teams)#
+    # Para avisar a cada miembro del equipo que llego un mensjae al grupo de teams
+    '''
+    1- Crear un flujo Flujo de nube automatizado en power automate
+    2- Desencadenante "Cuando se publique un mensaje en un canal" de Microsoft Teams.
+    3- escoger el equipo
+    4- agrregar un conector de teams que avise a un chat donde esten todos que llego un nuevo mensaje al equipo
+    '''
+    #nota= Se debe agragar un espacio para que se meta la contraseña de aplicación y el correo del equipo de teams en las variablesw de entorno 
+
+    ''' -Siempre debe haber un archivo .xlsx llamado "Persona asignada CNI" con el nombre de la persona asignada en la carpeta Input
+        como aparece en el archivo que se descarga del ITSM y el correo correspondiente a cada persona:
+
+    ejemplo:
+
+    Persona asignada	                    correo
+    Frank Stiven Barragán Gutiérrez	
+    Erika Carolina Zamudio	
+    Luis Carlos Rincon Gordo	            Luis.RinconG@axity.com
+    Dennis Carolina Holguin	
+    Esteban De Jesus Mazo Serna	'''
 
 main()

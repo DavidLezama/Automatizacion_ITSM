@@ -254,22 +254,21 @@ def navegacion_itsm(driver):
     time.sleep(10)
     url_filtros = 'https://servicios-it-corfi.atlassian.net/jira/filters'
     driver.get(url_filtros)
-    input_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div/input')))
+    input_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[1]/div[1]/div[2]/div[4]/div[1]/main/div/div/div[1]/div/div[1]/div[2]/div/div[1]/div/div/input')))
     input_filtro.send_keys('Todos ABIERTOS NIVEL 2')
     time.sleep(10)
-    click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div[2]/div[2]/table/tbody/tr/td[2]/div/div/a')))
+    click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[1]/div[1]/div[2]/div[4]/div[1]/main/div/div/div[1]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/div/a')))
     click_filtro.click()
     btn_excel = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="com.atlassian.jira.spreadsheets__open-in-excel"]/span')))
     btn_excel.click()
     print(f"URL de la nueva pestaña: {driver.current_url}")
     pestana_original = driver.current_window_handle
-
+    print('descargando')
     WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
     new_tab = [tab for tab in driver.window_handles if tab != pestana_original][0]
     driver.switch_to.window(new_tab)
     
     print(f"URL de la nueva pestaña: {driver.current_url}")
-
 
     time.sleep(10)
     btn_excel_desktop = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/section/div[3]/button/span')))
@@ -322,27 +321,6 @@ def manipular_excel_y_cargar_sharepoint(driver):
 
         print(f"\nLos datos filtrados se han guardado en: {output_path}")
 
-            # Ruta del archivo y la carpeta sincronizada de OneDrive
-        archivo_local = '.\\Output\\Datos_Filtrados.xlsx'
-        carpeta_onedrive = 'C:\\Users\\LCR404854\\OneDrive - Axity\\Documentos\\Proyectos\\CORFICOLOMBIANA\\Automatizaciones\\ITSM\\Corrección\\Proyecto\\Archivos'  # Ruta de la carpeta sincronizada de SharePoint en OneDrive
-        
-        try:
-            shutil.copy(archivo_local, carpeta_onedrive)
-            print(f"Archivo {archivo_local} copiado exitosamente a OneDrive.")
-        except Exception as e:
-            print(f"Error al copiar el archivo: {e}")
-
-        url_sharepoint = 'https://intellego365-my.sharepoint.com/:f:/g/personal/luis_rincong_axity_com/ErXjgNikoAVGsYBlUoSLmSQBo7dzFojvhCBTidq5W9BIzA?e=RnpB6Z'
-        
-        try:
-            driver.get(url_sharepoint)
-            print("Se ha cargado SharePoint correctamente.")
-            time.sleep(10)
-        except Exception as e:
-            print(f"Ocurrió un error al cargar SharePoint: {e}")
-        driver.refresh()
-        time.sleep(10)
-        driver.quit()
     else:
         print('No hay casos pendientes de mas de dos días')
 
@@ -370,7 +348,7 @@ def asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena):
 def enviar_correo(cuenta,contrasena,correo_equipo_teams):
 
     p_asignada = pd.read_excel('.\\Output\\Datos_Filtrados.xlsx')
-    correo_asignado = pd.read_excel('.\\Persona asignada.xlsx')
+    correo_asignado = pd.read_excel('.\\Input\\Persona asignada.xlsx')
 
     mensajes_acumulados = []
 
