@@ -143,7 +143,7 @@ def guardar_credenciales(cuenta, contrasena):
 
 def cargar_credenciales():
     
-    load_dotenv('Input/.env')
+    load_dotenv('./Input/.env')
 
     
     clave = obtener_clave_desde_credenciales("ENCRYPTION_KEY")
@@ -186,7 +186,7 @@ def  configuracion_navegador(cwd):
 
 
     
-    #options.add_argument("--headless") #Descomentar codigo al final 🔥
+    options.add_argument("--headless") #Descomentar codigo al final 🔥
     return options
 def instancia_webdriver_edge(options, url):
     try:
@@ -306,7 +306,7 @@ def manipular_excel_y_cargar_sharepoint(driver):
     df = df[1:]
 
     # Filtrar las filas por "Categoría de estado"
-    filtrados = df[df['Categoría de estado'].isin(['Asignación & Análisis'])]
+    filtrados = df[df['Categoría de estado'].isin(['Asignación & Análisis'])] 
 
             # Crear la carpeta de salida si no existe
     carpeta_output = '.\\Output'
@@ -464,8 +464,9 @@ def main ():
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
     contraseña_de_aplicacion=''#añadir contraseña de aplicación
-    correo_equipo_teams=''#Correo de equipo de teams
-    enviar_correo(cuenta,contraseña_de_aplicacion,correo_equipo_teams)#
+    correoelectronico=''#añadir correo electronico
+    correo_equipo_teams='61ef4454.axity.com@amer.teams.ms'#Correo de equipo de teams
+    enviar_correo(correoelectronico,contraseña_de_aplicacion,correo_equipo_teams)
     # Para avisar a cada miembro del equipo que llego un mensjae al grupo de teams
     '''
     1- Crear un flujo Flujo de nube automatizado en power automate
