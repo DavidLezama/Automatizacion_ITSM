@@ -37,24 +37,32 @@ def solicitar_credenciales():
     def confirmar():
         cuenta = cuenta_entry.get().strip()
         contrasena = contrasena_entry.get().strip()
-        
+        correo = correo_entry.get().strip()
+        contrasena_aplicacion = contrasena_app_entry.get().strip()
+
         if not cuenta:
             messagebox.showerror("Error", "Debe ingresar una cuenta.")
             return
         if not contrasena:
             messagebox.showerror("Error", "Debe ingresar una contraseña.")
             return
+        if not correo:
+            messagebox.showerror("Error", "Debe ingresar un correo electrónico.")
+            return
+        if not contrasena_aplicacion:
+            messagebox.showerror("Error", "Debe ingresar una contraseña de aplicación.")
+            return
 
         root.quit()  # Salir del bucle principal
         root.destroy()  # Cerrar la ventana
         nonlocal result
-        result = (cuenta, contrasena)
+        result = (cuenta, contrasena, correo, contrasena_aplicacion)
 
     # Configuración inicial
     root = tk.Tk()
     root.title("Iniciar Sesión")
-    root.configure(bg="#4B0082")  # Morado Axity
-    root.geometry("400x250")
+    root.configure(bg="#4B0082") 
+    root.geometry("400x400")
     root.resizable(False, False)
 
     # Títulos y estilos
@@ -63,7 +71,7 @@ def solicitar_credenciales():
     ).pack(pady=10)
 
     # Campo de entrada para la cuenta
-    tk.Label(root, text="Cuenta:", font=("Arial", 12), bg="#4B0082", fg="white").pack(
+    tk.Label(root, text="Cuenta(Jira):", font=("Arial", 12), bg="#4B0082", fg="white").pack(
         pady=5
     )
     cuenta_entry = tk.Entry(root, font=("Arial", 12), width=30)
@@ -71,10 +79,24 @@ def solicitar_credenciales():
 
     # Campo de entrada para la contraseña
     tk.Label(
-        root, text="Contraseña:", font=("Arial", 12), bg="#4B0082", fg="white"
+        root, text="Contraseña(Jira):", font=("Arial", 12), bg="#4B0082", fg="white"
     ).pack(pady=5)
     contrasena_entry = tk.Entry(root, font=("Arial", 12), width=30, show="*")
     contrasena_entry.pack(pady=5)
+
+    # Campo de entrada para el correo electrónico
+    tk.Label(
+        root, text="Correo Electrónico:", font=("Arial", 12), bg="#4B0082", fg="white"
+    ).pack(pady=5)
+    correo_entry = tk.Entry(root, font=("Arial", 12), width=30)
+    correo_entry.pack(pady=5)
+
+    # Campo de entrada para la contraseña de aplicación
+    tk.Label(
+        root, text="Contraseña de Aplicación:", font=("Arial", 12), bg="#4B0082", fg="white"
+    ).pack(pady=5)
+    contrasena_app_entry = tk.Entry(root, font=("Arial", 12), width=30, show="*")
+    contrasena_app_entry.pack(pady=5)
 
     # Botón para confirmar
     confirmar_btn = tk.Button(
@@ -90,6 +112,7 @@ def solicitar_credenciales():
     result = None
     root.mainloop()  # Mostrar la ventana
     return result
+
 
 
 
@@ -121,9 +144,9 @@ def generar_clave():
     guardar_clave_en_credenciales("ENCRYPTION_KEY", nueva_clave)  
     return nueva_clave
 
-def guardar_credenciales(cuenta, contrasena):
-   
-    if not cuenta or not contrasena:
+def guardar_credenciales(cuenta, contrasena, correo, contrasena_aplicacion):
+
+    if not cuenta or not contrasena or not correo or not contrasena_aplicacion:
         print("No se ingresaron credenciales válidas.")
         return
 
@@ -132,20 +155,22 @@ def guardar_credenciales(cuenta, contrasena):
 
     cuenta_encriptada = cipher.encrypt(cuenta.encode()).decode()
     contrasena_encriptada = cipher.encrypt(contrasena.encode()).decode()
+    correo_encriptado = cipher.encrypt(correo.encode()).decode()
+    contrasena_aplicacion_encriptada = cipher.encrypt(contrasena_aplicacion.encode()).decode()
 
-    
     with open("Input/.env", "w") as archivo:
         archivo.write(f"CUENTA={cuenta_encriptada}\n")
         archivo.write(f"CONTRASENA={contrasena_encriptada}\n")
+        archivo.write(f"CORREO={correo_encriptado}\n")
+        archivo.write(f"CONTRASENA_APLICACION={contrasena_aplicacion_encriptada}\n")
 
     print("Credenciales encriptadas y guardadas correctamente en .env.")
     print(f"Clave actualizada en el Credential Manager: ENCRYPTION_KEY={clave}")
 
+
 def cargar_credenciales():
-    
     load_dotenv('./Input/.env')
 
-    
     clave = obtener_clave_desde_credenciales("ENCRYPTION_KEY")
     if not clave:
         print("Error: La clave de desencriptado no está configurada en el Windows Credential Manager.")
@@ -155,21 +180,25 @@ def cargar_credenciales():
 
     cuenta_encriptada = os.getenv("CUENTA")
     contrasena_encriptada = os.getenv("CONTRASENA")
+    correo_encriptado = os.getenv("CORREO")
+    contrasena_aplicacion_encriptada = os.getenv("CONTRASENA_APLICACION")
 
-    if not cuenta_encriptada or not contrasena_encriptada:
+    if not cuenta_encriptada or not contrasena_encriptada or not correo_encriptado or not contrasena_aplicacion_encriptada:
         print("Error: No se encontraron credenciales en el archivo .env.")
         return
-
     
     cuenta = cipher.decrypt(cuenta_encriptada.encode()).decode()
     contrasena = cipher.decrypt(contrasena_encriptada.encode()).decode()
+    correo = cipher.decrypt(correo_encriptado.encode()).decode()
+    contrasena_aplicacion = cipher.decrypt(contrasena_aplicacion_encriptada.encode()).decode()
 
-    #print("Credenciales descifradas:")
-    #print(f"Cuenta: {cuenta}")
-    #print(f"Contraseña: {contrasena}")
-    #print(f"Clave: {clave}")
+    print("Credenciales cargadas correctamente:")
+    print(f"Cuenta: {cuenta}")
+    print(f"Contraseña: {contrasena}")
+    print(f"Correo: {correo}")
+    print(f"Contraseña de Aplicación: {contrasena_aplicacion}")
 
-    return cuenta, contrasena
+    return cuenta, contrasena,correo,contrasena_aplicacion
 def  configuracion_navegador(cwd):
     options = Options()
     prefs = {
@@ -431,11 +460,11 @@ def enviar_correo(cuenta,contrasena,correo_equipo_teams):
 def main ():   
 
     if not os.path.exists("Input/.env"):
-        cuenta, contrasena = solicitar_credenciales()
+        cuenta, contrasena,correoelectronico,contrasena_de_aplicacion = solicitar_credenciales()
         if cuenta and contrasena:
-            guardar_credenciales(cuenta, contrasena)
+            guardar_credenciales(cuenta, contrasena,correoelectronico,contrasena_de_aplicacion)
     else:
-        cuenta , contrasena = cargar_credenciales()
+        cuenta , contrasena,correoelectronico,contrasena_de_aplicacion = cargar_credenciales()
         print('Nice')
     
     cwd = str(Path().resolve())
@@ -450,10 +479,10 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
-    contraseña_de_aplicacion=''#añadir contraseña de aplicación
-    correoelectronico=''#Añadir correo 
+    #contrasena_de_aplicacion=''#añadir contraseña de aplicación
+    #correoelectronico=''#Añadir correo 
     correo_equipo_teams='2b55fcaa.axity.com@amer.teams.ms'#Correo de equipo de teams
-    enviar_correo(correoelectronico,contraseña_de_aplicacion,correo_equipo_teams)
+    enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
     # Para avisar a cada miembro del equipo que llego un mensjae al grupo de teams
     '''
     1- Crear un flujo Flujo de nube automatizado en power automate
