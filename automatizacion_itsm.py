@@ -144,7 +144,17 @@ def generar_clave():
     guardar_clave_en_credenciales("ENCRYPTION_KEY", nueva_clave)  
     return nueva_clave
 
+def validar_crear_carpeta_input():
+    carpeta_input = './Input'
+    if not os.path.exists(carpeta_input):
+        os.makedirs(carpeta_input)
+        print("La carpeta 'Input' no existía, se ha creado correctamente.")
+    else:
+        print("La carpeta 'Input' ya existe.")
+
 def guardar_credenciales(cuenta, contrasena, correo, contrasena_aplicacion):
+
+    validar_crear_carpeta_input()
 
     if not cuenta or not contrasena or not correo or not contrasena_aplicacion:
         print("No se ingresaron credenciales válidas.")
@@ -192,17 +202,15 @@ def cargar_credenciales():
     correo = cipher.decrypt(correo_encriptado.encode()).decode()
     contrasena_aplicacion = cipher.decrypt(contrasena_aplicacion_encriptada.encode()).decode()
 
-    print("Credenciales cargadas correctamente:")
-    print(f"Cuenta: {cuenta}")
-    print(f"Contraseña: {contrasena}")
-    print(f"Correo: {correo}")
-    print(f"Contraseña de Aplicación: {contrasena_aplicacion}")
-
     return cuenta, contrasena,correo,contrasena_aplicacion
+
+
 def  configuracion_navegador(cwd):
     options = Options()
     prefs = {
-        "download.default_directory": cwd,  
+        "download.default_directory": cwd,
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,  
         "safebrowsing.enabled": "false",    
         "profile.default_content_settings.popups": 0,
     }
@@ -268,7 +276,7 @@ def autenticacion_itsm(driver,cuenta,contrasena):
             print('mini siesta terminada')
             return driver
         except NoSuchElementException:
-            print('No encontre la monda esa😠')
+            print('No encontre 😠')
             pass
 
         return driver
@@ -320,7 +328,7 @@ def renombrar_excel():
 # pip install openpyxl 
 def manipular_excel_y_cargar_sharepoint(driver):
     
-    wb = load_workbook('.\\Input\\Filtro.xlsx')
+    wb = load_workbook('Input/Filtro.xlsx')
     sheet = wb.active
 
     data=[]
@@ -341,11 +349,11 @@ def manipular_excel_y_cargar_sharepoint(driver):
 
     if not filtrados.empty:
         print('Hay casos pendientes de mas de dos días')
-        carpeta_output = '.\\Output'
+        carpeta_output = './Output'
         if not os.path.exists(carpeta_output):
             os.makedirs(carpeta_output)
 
-        output_path = '.\\Output\\Datos_Filtrados.xlsx'
+        output_path = 'Output/Datos_Filtrados.xlsx'
         filtrados.to_excel(output_path, index=False)
 
         print(f"\nLos datos filtrados se han guardado en: {output_path}")
@@ -374,88 +382,155 @@ def asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena):
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
 
-def enviar_correo(cuenta,contrasena,correo_equipo_teams):
+def enviar_correo(cuenta, contrasena, correo_equipo_teams):
+    # Leer los datos de los casos y los correos asignados
+    p_asignada = pd.read_excel('Output/Datos_Filtrados.xlsx')
+    correo_asignado = pd.read_excel('Input/Persona asignada.xlsx')
 
-    p_asignada = pd.read_excel('.\\Output\\Datos_Filtrados.xlsx')
-    correo_asignado = pd.read_excel('.\\Input\\Persona asignada.xlsx')
+    # Agrupar por Persona asignada
+    grupos = p_asignada.groupby('Persona asignada')
 
-    mensajes_acumulados = []
+    # Tabla consolidada para el correo del equipo de Teams
+    tabla_general = """
+        <table>
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Persona asignada</th>
+                    <th>Clave</th>
+                    <th>Resumen</th>
+                    <th>Categoría de Estado</th>
+                    <th>Última Respuesta</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
 
-    for i, persona in enumerate(p_asignada['Persona asignada']):
+    iterador=1
 
+    # Enviar correos individuales agrupados por persona
+    for persona, casos in grupos:
+        # Buscar el correo del encargado
         coincidencia = correo_asignado[correo_asignado['Persona asignada'] == persona]
-        
+
         if not coincidencia.empty and not coincidencia['correo'].isna().all():
             destinatario = coincidencia['correo'].values[0]
-            clave = p_asignada.loc[i, 'Clave']
-            actualizada = p_asignada.loc[i, 'Actualizada']
-            categoria = p_asignada.loc[i, 'Categoría de estado']
-            resumen = p_asignada.loc[i, 'Resumen']
-            p_encargada=p_asignada.loc[i,'Persona asignada']
-            mensaje_correo = MIMEText(f"""
-                            <html>
-                            <head>
-                                <style>
-                                body {{
-                                    font-family: Arial, sans-serif;
-                                    font-size: 14px;
-                                    color: #333333;
-                                }}
-                                p {{
-                                    margin: 10px 0;
-                                }}
-                                .resumen {{
-                                    color: #0056b3;
-                                    font-weight: bold;
-                                }}
-                                .fecha {{
-                                    color: #888888;
-                                }}
-                                </style>
-                            </head>
-                            <body>
-                                <p>Buen día <strong>{p_encargada},</strong></p>
-                                <p>El caso <span class="resumen">{clave}</span> "{resumen}" se encuentra en la categoría: 
-                                <em>"{categoria}"</em> y su última respuesta fue el <span class="fecha">{actualizada}</span>.</p>
-                                <p>Por favor, dar nueva respuesta.</p>
-                                <p>¡Gracias!</p>
-                            </body>
-                            </html>
-                        """, 'html')
 
-            asunto=f'Caso {clave} pendiente de respuesta'
-            asignar_correo(destinatario, asunto, mensaje_correo,cuenta,contrasena)
-            print('Correo enviado con exito')
-            # envio de mensaje a grupo de teams por medio de correo de teams
-            mensaje_individual=f"""
-            <p>---------------------------------------------------------------------------------------------------</p>
-            <p>✔ Buen día <strong>{p_encargada},</strong></p>
-            <p>El caso <strong>{clave}</strong> "{resumen}" se encuentra en la categoría: 
-            <em>"{categoria}"</em> y su última respuesta fue el <strong>{actualizada}</strong>.</p>
+            # Crear el mensaje HTML
+            mensaje_html = f"""
+                <html>
+                <head>
+                    <style>
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                        }}
+                        th, td {{
+                            border: 1px solid #dddddd;
+                            text-align: left;
+                            padding: 8px;
+                        }}
+                        th {{
+                            background-color: #f2f2f2;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <p>Buen día <strong>{persona},</strong></p>
+                    <p>A continuación, se detallan los casos asignados pendientes:</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Clave</th>
+                                <th>Resumen</th>
+                                <th>Categoría de Estado</th>
+                                <th>Última Respuesta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            """
+            for _, caso in casos.iterrows():
+                mensaje_html += f"""
+                    <tr>
+                        <td>{caso['Clave']}</td>
+                        <td>{caso['Resumen']}</td>
+                        <td>{caso['Categoría de estado']}</td>
+                        <td>{caso['Actualizada']}</td>
+                    </tr>
+                """
+
+                # Agregar al acumulado general para Teams
+                tabla_general += f"""
+                    <tr>
+                        <td>{iterador}</td>
+                        <td>{persona}</td>
+                        <td>{caso['Clave']}</td>
+                        <td>{caso['Resumen']}</td>
+                        <td>{caso['Categoría de estado']}</td>
+                        <td>{caso['Actualizada']}</td>
+                    </tr>
+                """
+
+                iterador+=1
+
+            mensaje_html += """
+                        </tbody>
+                    </table>
+                    <p>Por favor, atender estos casos a la brevedad.</p>
+                    <p>¡Gracias!</p>
+                </body>
+                </html>
             """
 
-            # Añadir el mensaje a la lista de mensajes 
-            mensajes_acumulados.append(mensaje_individual)
+            # Enviar el correo al analista
+            mensaje_correo = MIMEText(mensaje_html, 'html')
+            asunto = f"Resumen de casos pendientes para {persona}"
+            asignar_correo(destinatario, asunto, mensaje_correo, cuenta, contrasena)
+            print(f"Correo enviado a {persona} ({destinatario}) con éxito.")
 
-              # Consolidar todos los mensajes en un solo correo para el equipo de Teams
-    if mensajes_acumulados:
-        mensajes_html = ''.join(mensajes_acumulados)
-        mensaje_equipo = MIMEText(f"""
-            <html>
-            <head></head>
-            <body>
-                {mensajes_html}
-                <p>---------------------------------------------------------------------------------------------------</p>
-                <p>Por favor, revisar estos casos.</p>
-                <p>¡Gracias!</p>
-            </body>
-            </html>
-        """, 'html')
-        asunto_equipo = "Resumen de casos pendientes"
+    # Cerrar la tabla general
+    tabla_general += """
+            </tbody>
+        </table>
+    """
 
-        asignar_correo(correo_equipo_teams, asunto_equipo, mensaje_equipo,cuenta,contrasena)
-    else:
-        print('No hay casos pendientes')
+    # mensaje para el equipo de Teams
+    total_casos = len(p_asignada)
+    mensaje_general_html = f"""
+        <html>
+        <head>
+            <style>
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                th, td {{
+                    border: 1px solid #dddddd;
+                    text-align: left;
+                    padding: 8px;
+                }}
+                th {{
+                    background-color: #f2f2f2;
+                }}
+            </style>
+        </head>
+        <body>
+            <p>Buen día,</p>
+            <p>A continuación, se presenta un resumen general de los casos pendientes agrupados por analista encargado:</p>
+            <p><strong>Total de casos pendientes:</strong> {total_casos}</p>
+            {tabla_general}
+            <p>Por favor, revisar estos casos.</p>
+            <p>¡Gracias!</p>
+        </body>
+        </html>
+    """
+
+    mensaje_equipo = MIMEText(mensaje_general_html, 'html')
+    asunto_equipo = "Resumen general de casos pendientes"
+    asignar_correo(correo_equipo_teams, asunto_equipo, mensaje_equipo, cuenta, contrasena)
+    print(f"Correo enviado al equipo de Teams ({correo_equipo_teams}) con éxito.")
+
+
     
 def main ():   
 
@@ -467,8 +542,8 @@ def main ():
         cuenta , contrasena,correoelectronico,contrasena_de_aplicacion = cargar_credenciales()
         print('Nice')
     
-    cwd = str(Path().resolve())
-    cwd=cwd+"\\Input"
+    cwd = os.path.abspath('Input')
+
     
     options = configuracion_navegador(cwd=cwd)
     url_jira = "https://id.atlassian.com/login"
@@ -479,30 +554,8 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
-    #contrasena_de_aplicacion=''#añadir contraseña de aplicación
-    #correoelectronico=''#Añadir correo 
     correo_equipo_teams='2b55fcaa.axity.com@amer.teams.ms'#Correo de equipo de teams
     enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
-    # Para avisar a cada miembro del equipo que llego un mensjae al grupo de teams
-    '''
-    1- Crear un flujo Flujo de nube automatizado en power automate
-    2- Desencadenante "Cuando se publique un mensaje en un canal" de Microsoft Teams.
-    3- escoger el equipo
-    4- agrregar un conector de teams que avise a un chat donde esten todos que llego un nuevo mensaje al equipo
-    '''
-    #nota= Se debe agragar un espacio para que se meta la contraseña de aplicación y el correo del equipo de teams en las variablesw de entorno 
-
-    ''' -Siempre debe haber un archivo .xlsx llamado "Persona asignada" con el nombre de la persona asignada 
-        como aparece en el archivo que se descarga del ITSM y el correo correspondiente a cada persona:
-
-    ejemplo:
-
-    Persona asignada	                    correo
-    Frank Stiven Barragán Gutiérrez	
-    Erika Carolina Zamudio	
-    Luis Carlos Rincon Gordo	            Luis.RinconG@axity.com
-    Dennis Carolina Holguin	
-    Esteban De Jesus Mazo Serna	'''
 
 
 main()
