@@ -143,7 +143,17 @@ def generar_clave():
     guardar_clave_en_credenciales("ENCRYPTION_KEY", nueva_clave)  
     return nueva_clave
 
+def validar_crear_carpeta_input():
+    carpeta_input = './Input'
+    if not os.path.exists(carpeta_input):
+        os.makedirs(carpeta_input)
+        print("La carpeta 'Input' no existía, se ha creado correctamente.")
+    else:
+        print("La carpeta 'Input' ya existe.")
+
 def guardar_credenciales(cuenta, contrasena, correo, contrasena_aplicacion):
+
+    validar_crear_carpeta_input()
 
     if not cuenta or not contrasena or not correo or not contrasena_aplicacion:
         print("No se ingresaron credenciales válidas.")
@@ -266,7 +276,7 @@ def autenticacion_itsm(driver,cuenta,contrasena):
             print('mini siesta terminada')
             return driver
         except NoSuchElementException:
-            print('No encontre la monda esa😠')
+            print('No encontre 😠')
             pass
 
         return driver
@@ -319,7 +329,7 @@ def renombrar_excel():
 # pip install openpyxl 
 def manipular_excel_y_cargar_sharepoint(driver):
     
-    wb = load_workbook('.\\Input\\FiltroCNI.xlsx')
+    wb = load_workbook('Input/FiltroCNI.xlsx')
     sheet = wb.active
 
     data=[]
@@ -336,11 +346,11 @@ def manipular_excel_y_cargar_sharepoint(driver):
     filtrados = df[df['Categoría de estado'].isin(['Asignación & Análisis'])] 
 
             # Crear la carpeta de salida si no existe
-    carpeta_output = '.\\Output'
+    carpeta_output = './Output'
     if not os.path.exists(carpeta_output):
         os.makedirs(carpeta_output)
 
-    output_path = '.\\Output\\Datos_Filtrados_CNI.xlsx'
+    output_path = 'Output/Datos_Filtrados_CNI.xlsx'
 
     if not filtrados.empty:
         print('Se encontraron filas con "Asignación & Análisis" en la columna "Categoría de estado".')
@@ -380,8 +390,8 @@ def asignar_correo(destinatario, asunto, mensaje,cuenta,contrasena):
 
 def enviar_correo(cuenta,contrasena,correo_equipo_teams):
 
-    caso_nuevo = pd.read_excel('.\\Output\\Datos_Filtrados_CNI.xlsx')
-    correo_asignado = pd.read_excel('.\\Input\\Persona asignada CNI.xlsx')
+    caso_nuevo = pd.read_excel('Output/Datos_Filtrados_CNI.xlsx')
+    correo_asignado = pd.read_excel('Input/Persona asignada CNI.xlsx')
 
     mensajes_acumulados = []
 
@@ -478,8 +488,7 @@ def main ():
         cuenta , contrasena,correoelectronico,contrasena_de_aplicacion = cargar_credenciales()
         print('Nice')
     
-    cwd = str(Path().resolve())
-    cwd=cwd+"\\Input"
+    cwd = os.path.abspath('Input')
     
     options = configuracion_navegador(cwd=cwd)
     url_jira = "https://id.atlassian.com/login"
@@ -490,29 +499,8 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
-    #contrasena_de_aplicacion=''#añadir contraseña de aplicación
-    #correoelectronico=''#Añadir correo 
-    correo_equipo_teams='2b55fcaa.axity.com@amer.teams.ms'#Correo de equipo de teams
+    correo_equipo_teams='61ef4454.axity.com@amer.teams.ms'#Correo de equipo de teams
     enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
-    # Para avisar a cada miembro del equipo que llego un mensjae al grupo de teams
-    '''
-    1- Crear un flujo Flujo de nube automatizado en power automate
-    2- Desencadenante "Cuando se publique un mensaje en un canal" de Microsoft Teams.
-    3- escoger el equipo
-    4- agrregar un conector de teams que avise a un chat donde esten todos que llego un nuevo mensaje al equipo
-    '''
-    #nota= Se debe agragar un espacio para que se meta la contraseña de aplicación y el correo del equipo de teams en las variablesw de entorno 
 
-    ''' -Siempre debe haber un archivo .xlsx llamado "Persona asignada CNI" con el nombre de la persona asignada en la carpeta Input
-        como aparece en el archivo que se descarga del ITSM y el correo correspondiente a cada persona:
-
-    ejemplo:
-
-    Persona asignada	                    correo
-    Frank Stiven Barragán Gutiérrez	
-    Erika Carolina Zamudio	
-    Luis Carlos Rincon Gordo	            Luis.RinconG@axity.com
-    Dennis Carolina Holguin	
-    Esteban De Jesus Mazo Serna	'''
 
 main()
