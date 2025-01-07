@@ -223,7 +223,7 @@ def  configuracion_navegador(cwd):
 
 
     
-    options.add_argument("--headless") #Descomentar codigo al final 🔥
+    #options.add_argument("--headless") #Descomentar codigo al final 🔥
     return options
 def instancia_webdriver_edge(options, url):
     try:
@@ -294,7 +294,7 @@ def navegacion_itsm(driver):
     input_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[1]/div[1]/div[2]/div[4]/div[1]/main/div/div/div[1]/div/div[1]/div[2]/div/div[1]/div/div/input')))
     input_filtro.send_keys('Todos ABIERTOS NIVEL 2')
     time.sleep(10)
-    click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[1]/div[1]/div[2]/div[4]/div[1]/main/div/div/div[1]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/div/a')))
+    click_filtro = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="ak-main-content"]/div/div/div[1]/div/div[2]/div[2]/table/tbody/tr/td[2]/div/a')))
     click_filtro.click()
     btn_excel = wait.until(EC.element_to_be_clickable((By.XPATH,'//*[@id="com.atlassian.jira.spreadsheets__open-in-excel"]/span')))
     btn_excel.click()
@@ -499,7 +499,7 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
-    correo_equipo_teams='61ef4454.axity.com@amer.teams.ms'#Correo de equipo de teams
+    correo_equipo_teams='cc9f3499.axity.com@amer.teams.ms'#Correo de equipo de teams
     enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
 
 
