@@ -200,12 +200,6 @@ def cargar_credenciales():
     correo = cipher.decrypt(correo_encriptado.encode()).decode()
     contrasena_aplicacion = cipher.decrypt(contrasena_aplicacion_encriptada.encode()).decode()
 
-    #print("Credenciales cargadas correctamente:")
-    #print(f"Cuenta: {cuenta}")
-    #print(f"Contraseña: {contrasena}")
-    #print(f"Correo: {correo}")
-    #print(f"Contraseña de Aplicación: {contrasena_aplicacion}")
-
     return cuenta, contrasena,correo,contrasena_aplicacion
 def  configuracion_navegador(cwd):
     options = Options()
@@ -343,7 +337,9 @@ def manipular_excel_y_cargar_sharepoint(driver):
     df = df[1:]
 
     # Filtrar las filas por "Categoría de estado"
-    filtrados = df[df['Categoría de estado'].isin(['Asignación & Análisis'])] 
+    categorias_filtrar = ['Asignación & Análisis', 'Reapertura']
+    filtrados = df[df['Categoría de estado'].isin(categorias_filtrar)]
+ 
 
             # Crear la carpeta de salida si no existe
     carpeta_output = './Output'
@@ -499,7 +495,7 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
-    correo_equipo_teams='cc9f3499.axity.com@amer.teams.ms'#Correo de equipo de teams
+    correo_equipo_teams='61ef4454.axity.com@amer.teams.ms'#Correo de equipo de teams
     enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
 
 

@@ -114,9 +114,6 @@ def solicitar_credenciales():
     return result
 
 
-
-
-
 def guardar_clave_en_credenciales(nombre, valor):
     
     try:
