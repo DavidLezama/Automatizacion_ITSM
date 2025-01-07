@@ -551,6 +551,7 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
+    #Dejar el correo de equipo de teams de PRUEBA
     correo_equipo_teams='cc9f3499.axity.com@amer.teams.ms'#Correo de equipo de teams
     enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
 
