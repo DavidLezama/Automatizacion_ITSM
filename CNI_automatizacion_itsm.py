@@ -309,7 +309,7 @@ def navegacion_itsm(driver):
 
 
     time.sleep(10)
-    btn_excel_desktop = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/section/div[3]/button/span')))
+    btn_excel_desktop = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/section/div[3]/a[1]/span')))
     btn_excel_desktop.click()
    
 

@@ -223,7 +223,7 @@ def  configuracion_navegador(cwd):
 
 
     
-    options.add_argument("--headless") #Descomentar codigo al final 🔥
+    #options.add_argument("--headless") #Descomentar codigo al final 🔥
     return options
 def instancia_webdriver_edge(options, url):
     try:
@@ -308,7 +308,7 @@ def navegacion_itsm(driver):
     print(f"URL de la nueva pestaña: {driver.current_url}")
 
     time.sleep(10)
-    btn_excel_desktop = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/section/div[3]/button/span')))
+    btn_excel_desktop = wait.until(EC.element_to_be_clickable((By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/section/div[3]/a[1]/span')))
     btn_excel_desktop.click()
    
 
@@ -554,7 +554,7 @@ def main ():
     navegacion_itsm(driver=driver)
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
-    correo_equipo_teams='2b55fcaa.axity.com@amer.teams.ms'#Correo de equipo de teams
+    correo_equipo_teams='cc9f3499.axity.com@amer.teams.ms'#Correo de equipo de teams
     enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
 
 
