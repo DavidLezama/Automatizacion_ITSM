@@ -509,7 +509,7 @@ def main ():
     renombrar_excel()
     manipular_excel_y_cargar_sharepoint(driver)
     #Dejar el correo de equipo de teams de PRUEBA
-    correo_equipo_teams='61ef4454.axity.com@amer.teams.ms'#Correo de equipo de teams
+    correo_equipo_teams='c71b7254.axity.com@amer.teams.ms'#Correo de equipo de teams
     enviar_correo(correoelectronico,contrasena_de_aplicacion,correo_equipo_teams)
 
 
